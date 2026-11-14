@@ -1,0 +1,41 @@
+name: Diagnostic Qt Windows exporter
+on:
+  push:
+    branches: [test/qt-windows-ci-nov14]
+permissions:
+  contents: read
+jobs:
+  qtpdf:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: base-default
+            repository: jupyter/nbconvert
+            ref: e681152f214b65387f875aad96a4726994533a0b
+            platform: windows
+          - case: pr-default
+            repository: agammann/nbconvert
+            ref: e1586feac1634a4788a77df55c628c8e14799c30
+            platform: windows
+          - case: base-offscreen
+            repository: jupyter/nbconvert
+            ref: e681152f214b65387f875aad96a4726994533a0b
+            platform: offscreen
+    name: ${{ matrix.case }}
+    env:
+      NBFORMAT_VALIDATOR: jsonschema
+      QT_QPA_PLATFORM: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install hatch
+      - run: hatch run cov:nowarn tests/exporters/test_qtpdf.py::TestQtPDFExporter::test_export
